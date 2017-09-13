@@ -264,8 +264,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	matchesraw := reg_raw.FindAllString(statusPage, -1)[0]
 	matchesrawSlice := strings.Split(matchesraw, "</dt>")
 
-	fmt.Println("==== matchesrawSlice ==== ", matchesrawSlice)
-
 	var apachever string
 
 	var uptime_days string
@@ -344,7 +342,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 		if strings.Contains(line_ex[0], "Server uptime") {
 			uptime := strings.TrimSpace(line_ex[1])
 			uptimearr := strings.Split(uptime, " ")
-			fmt.Println("===== Uptime Len ==== ", uptimearr, len(uptimearr))
 			if len(uptimearr) == 4 {
 				uptime_seconds = uptimearr[len(uptimearr)-2]
 				uptime_minutes = uptimearr[len(uptimearr)-4]
@@ -363,7 +360,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 				uptime_hours = uptimearr[len(uptimearr)-6]
 				uptime_days = uptimearr[len(uptimearr)-8]
 			}
-			fmt.Println("uptime_days: ", uptime_days, uptime_hours, uptime_minutes, uptime_seconds)
 		}
 		if strings.Contains(line_ex[0], "requests currently being processed") {
 			req_line := strings.TrimSpace(line_ex[0])
