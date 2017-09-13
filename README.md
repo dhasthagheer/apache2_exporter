@@ -37,3 +37,27 @@ Usage of ./apache2_exporter:
   -telemetry.endpoint string
     	Path under which to expose metrics. (default "/metrics")
 ```
+
+## Metrics 
+
+| Metric	        | Type  | Descriptions  |
+|:------------------|:------|:--------------|
+| `apache_cpu_load` | gauge | CPU Load in % |
+| `apache_cpu_usage_system` | gauge | CPU Usage (System) |
+| `apache_cpu_usage_user` | gauge | CPU Usage (User) |
+| `apache_data_per_request` | gauge | Data per request |
+| `apache_data_per_second` | gauge | Data per second |
+| `apache_idle_workers` | gauge | Idle Workers |
+| `apache_number_of_requests_from_client` | gauge | Number of requests from client |
+| `apache_request_currently_being_processed` | gauge | Request Currently Being Processed |
+| `apache_requests_per_second` | gauge | Requests per second |
+| `apache_total_accesses` | gauge | Total Accesses |
+| `apache_total_requests` | gauge | Total no of Requests |
+| `apache_total_traffic` | gauge | Total Traffic |
+| `apache_uptime_days` | gauge | Apache server uptime in days |
+| `apache_uptime_hours` | gauge | Apache server uptime hour, but uptime days should be countable |
+| `apache_uptime_minutes` | gauge | Apache server uptime minutes, but uptime days should be countable |
+| `apache_uptime_seconds` | gauge | Apache server uptime seconds, but uptime days should be countable |
+| `apache_version` | gauge | Apache version |
+| `apache_virtual_hosts` | gauge | Number of virtual hosts |
+
