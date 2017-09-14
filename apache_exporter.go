@@ -44,6 +44,7 @@ type Exporter struct {
 	totalAccesses         prometheus.Gauge
 	cpuUsageUser          prometheus.Gauge
 	cpuUsageSystem        prometheus.Gauge
+	cpuUsage              *prometheus.GaugeVec
 	cpuLoad               prometheus.Gauge
 	totalTraffic          *prometheus.GaugeVec
 	requestBeingProcessed prometheus.Gauge
@@ -109,6 +110,13 @@ func NewApache2Exporter(uri string) *Exporter {
 			Name:      "cpu_usage_system",
 			Help:      "CPU Usage (System)",
 		}),
+		cpuUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "cpu_usage",
+			Help:      "Apache Server CPU Usage",
+		},
+			[]string{"type"},
+		),
 		cpuLoad: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Name:      "cpu_load",
@@ -184,6 +192,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.totalAccesses.Describe(ch)
 	e.cpuUsageUser.Describe(ch)
 	e.cpuUsageSystem.Describe(ch)
+	e.cpuUsage.Describe(ch)
 	e.cpuLoad.Describe(ch)
 	e.totalTraffic.Describe(ch)
 	e.requestBeingProcessed.Describe(ch)
@@ -396,6 +405,9 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	e.totalAccesses.Set(float64(accesses))
 	e.cpuUsageUser.Set(float64(cpu_usage_user))
 	e.cpuUsageSystem.Set(float64(cpu_usage_system))
+	e.cpuUsage.WithLabelValues("user").Set(float64(cpu_usage_user))
+	e.cpuUsage.WithLabelValues("system").Set(float64(cpu_usage_system))
+	e.cpuUsage.WithLabelValues("idle").Set(float64(100 - cpu_usage_user - cpu_usage_system))
 	e.cpuLoad.Set(float64(cpu_load))
 	e.totalTraffic.WithLabelValues(totaltrafic_ext).Set(float64(tot_traf_val))
 	e.requestBeingProcessed.Set(float64(request_being_processed))
@@ -435,6 +447,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.totalAccesses.Collect(ch)
 	e.cpuUsageUser.Collect(ch)
 	e.cpuUsageSystem.Collect(ch)
+	e.cpuUsage.Collect(ch)
 	e.cpuLoad.Collect(ch)
 	e.totalTraffic.Collect(ch)
 	e.requestBeingProcessed.Collect(ch)
