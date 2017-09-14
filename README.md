@@ -5,20 +5,10 @@
 This is a simple server that periodically scrapes apache stats and exports them via HTTP for Prometheus
 consumption.
 
-To install it:
+## Prework
 
-```bash
-sudo apt-get install mercurial
-git clone https://github.com/dhasthagheer/apache2_exporter.git
-cd apache_exporter
-make
-```
+- [Enable Apache server-status](https://unix.stackexchange.com/questions/153915/enable-server-status-on-my-web-server)
 
-To run it:
-
-```bash
-./apache_exporter [flags]
-```
 
 ## Usage
 
@@ -31,7 +21,8 @@ Usage of ./apache2_exporter:
   -insecure
     	Ignore server certificate if using https (default true)
   -log.level value
-    	Only log messages with the given severity or above. Valid levels: [debug, info, warn, error, fatal, panic].
+      Only log messages with the given severity or above. 
+      Valid levels: [debug, info, warn, error, fatal, panic].
   -telemetry.address string
     	Address on which to expose metrics. (default ":9113")
   -telemetry.endpoint string
