@@ -13,20 +13,25 @@ consumption.
 ## Usage
 
 ```bash
-$ ./apache2_exporter -h
+$ ./apache_exporter -h
 
-Usage of ./apache2_exporter:
-  -apache2.scrape_uri string
-    	URI to apache2 stub status page (default "http://localhost/server-status")
+Usage of ./apache_exporter:
   -insecure
     	Ignore server certificate if using https (default true)
   -log.level value
-      Only log messages with the given severity or above. 
-      Valid levels: [debug, info, warn, error, fatal, panic].
+    	Only log messages with the given severity or above.
+		Valid levels: [debug, info, warn, error, fatal, panic].
+  -scrape_uri string
+    	URI to apache server status page. (default "http://localhost/server-status")
   -telemetry.address string
     	Address on which to expose metrics. (default ":9113")
   -telemetry.endpoint string
     	Path under which to expose metrics. (default "/metrics")
+```
+
+> e.g:
+```
+$ ./apache_exporter -scrape_uri http://localhost/server-status/ -telemetry.address :9113
 ```
 
 ## Metrics 
