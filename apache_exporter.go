@@ -24,7 +24,7 @@ const (
 var (
 	listenAddress    = flag.String("telemetry.address", ":9113", "Address on which to expose metrics.")
 	metricsPath      = flag.String("telemetry.endpoint", "/metrics", "Path under which to expose metrics.")
-	apache2ScrapeURI = flag.String("apache2.scrape_uri", "http://localhost/server-status", "URI to apache2 stub status page")
+	apache2ScrapeURI = flag.String("scrape_uri", "http://localhost/server-status", "URI to apache server status page.")
 	insecure         = flag.Bool("insecure", true, "Ignore server certificate if using https")
 )
 
