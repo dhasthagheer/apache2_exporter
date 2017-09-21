@@ -20,7 +20,7 @@ Usage of ./apache_exporter:
     	Ignore server certificate if using https (default true)
   -log.level value
     	Only log messages with the given severity or above.
-		Valid levels: [debug, info, warn, error, fatal, panic].
+	Valid levels: [debug, info, warn, error, fatal, panic].
   -scrape_uri string
     	URI to apache server status page. (default "http://localhost/server-status")
   -telemetry.address string
