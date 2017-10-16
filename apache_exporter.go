@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/log"
 )
@@ -54,6 +55,10 @@ type Exporter struct {
 	dataPerRequest        *prometheus.GaugeVec
 	clientRequests        *prometheus.GaugeVec
 	virtualHosts          *prometheus.GaugeVec
+	totalKBytes           prometheus.Gauge
+	serverUptime          prometheus.Gauge
+	busyWorkers           prometheus.Gauge
+	requestTime           *prometheus.GaugeVec
 }
 
 // NewApache2Exporter returns an initialized Exporter.
@@ -177,6 +182,28 @@ func NewApache2Exporter(uri string) *Exporter {
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: *insecure},
 			},
 		},
+		totalKBytes: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "total_kbytes",
+			Help:      "Apache data traffic in KB",
+		}),
+		serverUptime: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "server_uptime",
+			Help:      "Apache httpd server uptime",
+		}),
+		busyWorkers: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "busy_workers",
+			Help:      "Busy Workers",
+		}),
+		requestTime: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "request_time",
+			Help:      "Milliseconds required to process most recent request.",
+		},
+			[]string{"srv", "client", "vhost", "request"},
+		),
 	}
 }
 
@@ -203,6 +230,12 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.clientRequests.Describe(ch)
 	e.virtualHosts.Describe(ch)
 	e.scrapeFailures.Describe(ch)
+
+	e.totalKBytes.Describe(ch)
+	e.serverUptime.Describe(ch)
+	e.busyWorkers.Describe(ch)
+
+	e.requestTime.Describe(ch)
 }
 
 func RemoveDuplicates(xs *[]string) {
@@ -274,12 +307,10 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	matchesrawSlice := strings.Split(matchesraw, "</dt>")
 
 	var apachever string
-
 	var uptime_days string
 	var uptime_hours string
 	var uptime_minutes string
 	var uptime_seconds string
-
 	var totaltrafic_val string
 	var totaltrafic_ext string
 	var totalaccesses string
@@ -428,6 +459,103 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	return nil
 }
 
+// Scrape Metrics from Apache Scoreboard
+func (e *Exporter) scrapeScore(ch chan<- prometheus.Metric) error {
+	html, err := goquery.NewDocument(e.URI)
+	if err != nil {
+		fmt.Println("Request Error: %v", err)
+	}
+	tables := html.Find("table")
+	tables.Each(func(_ int, sel *goquery.Selection) {
+		attr, _ := sel.Attr("border")
+		if attr == "0" {
+			sel.Find("tr").Each(func(_ int, tr *goquery.Selection) {
+				var data []string
+				tr.Find("td").Each(func(_ int, cel *goquery.Selection) {
+					data = append(data, strings.TrimSpace(cel.Text()))
+				})
+
+				if len(data) == 13 {
+					request_time, _ := strconv.ParseFloat(data[6], 64)
+					e.requestTime.WithLabelValues(data[0], data[10], data[11], data[12]).Set(request_time)
+				}
+			})
+		}
+	})
+	return nil
+}
+
+// Scrape Metrics from Auto Param
+func (e *Exporter) scrapeBasic(ch chan<- prometheus.Metric) error {
+	URL := e.URI + "?auto"
+	resp, err := e.client.Get(URL)
+	if err != nil {
+		return fmt.Errorf("Error scraping apache status via auto: %v", err)
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		if err != nil {
+			data = []byte(err.Error())
+		}
+		return fmt.Errorf("Status %s (%d): %s", resp.Status, resp.StatusCode, data)
+	}
+
+	lines := strings.Split(string(data), "\n")
+	var (
+		//TotalAccesses string
+		TotalKBytes string
+		//CPULoad       string
+		Uptime string
+		//ReqPerSec     string
+		//BytesPerSec   string
+		//BytesPerReq   string
+		BusyWorkers string
+		//IdleWorkers   string
+	)
+
+	for _, line := range lines {
+		//fmt.Println(line)
+		metric := strings.Split(line, ":")
+		//if strings.Contains(metric[0], "Total Accesses") {
+		//TotalAccesses = strings.TrimSpace(metric[1])
+		//}
+		if strings.Contains(metric[0], "Total kBytes") {
+			TotalKBytes = strings.TrimSpace(metric[1])
+		}
+		//if strings.Contains(metric[0], "CPULoad") {
+		//CPULoad = strings.TrimSpace(metric[1])
+		//}
+		if strings.Contains(metric[0], "Uptime") {
+			Uptime = strings.TrimSpace(metric[1])
+		}
+		//if strings.Contains(metric[0], "ReqPerSec") {
+		//ReqPerSec = strings.TrimSpace(metric[1])
+		//}
+		//if strings.Contains(metric[0], "BytesPerSec") {
+		//BytesPerSec = strings.TrimSpace(metric[1])
+		//}
+		//if strings.Contains(metric[0], "BytesPerReq") {
+		//BytesPerReq = strings.TrimSpace(metric[1])
+		//}
+		if strings.Contains(metric[0], "BusyWorkers") {
+			BusyWorkers = strings.TrimSpace(metric[1])
+		}
+		//if strings.Contains(metric[0], "IdleWorkers") {
+		//IdleWorkers = strings.TrimSpace(metric[1])
+		//}
+	}
+
+	total_kbytes, _ := strconv.ParseFloat(TotalKBytes, 64)
+	server_uptime, _ := strconv.ParseFloat(Uptime, 64)
+	busy_workers, _ := strconv.ParseFloat(BusyWorkers, 64)
+	e.totalKBytes.Set(float64(total_kbytes))
+	e.serverUptime.Set(float64(server_uptime))
+	e.busyWorkers.Set(float64(busy_workers))
+
+	return nil
+}
+
 // Collect fetches the stats from configured nginx location and delivers them
 // as Prometheus metrics. It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
@@ -435,6 +563,16 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	defer e.mutex.Unlock()
 	if err := e.scrape(ch); err != nil {
 		log.Printf("Error scraping apache2: %s", err)
+		e.scrapeFailures.Inc()
+		e.scrapeFailures.Collect(ch)
+	}
+	if err := e.scrapeBasic(ch); err != nil {
+		log.Printf("Error scraping data via auto: %s", err)
+		e.scrapeFailures.Inc()
+		e.scrapeFailures.Collect(ch)
+	}
+	if err := e.scrapeScore(ch); err != nil {
+		log.Printf("Error scraping data via scoreboard: %s", err)
 		e.scrapeFailures.Inc()
 		e.scrapeFailures.Collect(ch)
 	}
@@ -457,6 +595,10 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.dataPerRequest.Collect(ch)
 	e.clientRequests.Collect(ch)
 	e.virtualHosts.Collect(ch)
+	e.totalKBytes.Collect(ch)
+	e.serverUptime.Collect(ch)
+	e.busyWorkers.Collect(ch)
+	e.requestTime.Collect(ch)
 	return
 }
 
