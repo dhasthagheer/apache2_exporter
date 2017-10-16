@@ -59,6 +59,7 @@ type Exporter struct {
 	serverUptime          prometheus.Gauge
 	busyWorkers           prometheus.Gauge
 	requestTime           *prometheus.GaugeVec
+	connectionKBytes      *prometheus.GaugeVec
 }
 
 // NewApache2Exporter returns an initialized Exporter.
@@ -204,6 +205,13 @@ func NewApache2Exporter(uri string) *Exporter {
 		},
 			[]string{"srv", "client", "vhost", "request"},
 		),
+		connectionKBytes: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "connection_kbytes",
+			Help:      "Kilobytes transferred of this connection.",
+		},
+			[]string{"srv", "client", "vhost", "request"},
+		),
 	}
 }
 
@@ -234,8 +242,8 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.totalKBytes.Describe(ch)
 	e.serverUptime.Describe(ch)
 	e.busyWorkers.Describe(ch)
-
 	e.requestTime.Describe(ch)
+	e.connectionKBytes.Describe(ch)
 }
 
 func RemoveDuplicates(xs *[]string) {
@@ -477,7 +485,9 @@ func (e *Exporter) scrapeScore(ch chan<- prometheus.Metric) error {
 
 				if len(data) == 13 {
 					request_time, _ := strconv.ParseFloat(data[6], 64)
+					connetion_kbytes, _ := strconv.ParseFloat(data[7], 64)
 					e.requestTime.WithLabelValues(data[0], data[10], data[11], data[12]).Set(request_time)
+					e.connectionKBytes.WithLabelValues(data[0], data[10], data[11], data[12]).Set(connetion_kbytes)
 				}
 			})
 		}
@@ -599,6 +609,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.serverUptime.Collect(ch)
 	e.busyWorkers.Collect(ch)
 	e.requestTime.Collect(ch)
+	e.connectionKBytes.Collect(ch)
 	return
 }
 
