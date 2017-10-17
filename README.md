@@ -44,6 +44,7 @@ $ ./apache_exporter -scrape_uri http://localhost/server-status/ -telemetry.addre
 | apache_data_per_request | gauge | Data per request |
 | apache_data_per_second | gauge | Data per second |
 | apache_idle_workers | gauge | Idle Workers |
+| apache_busy_workers | gauge | Busy Workers |
 | apache_number_of_requests_from_client | gauge | Number of requests from client |
 | apache_request_currently_being_processed | gauge | Request Currently Being Processed |
 | apache_requests_per_second | gauge | Requests per second |
@@ -56,4 +57,8 @@ $ ./apache_exporter -scrape_uri http://localhost/server-status/ -telemetry.addre
 | apache_uptime_seconds | gauge | Apache server uptime seconds, but uptime days should be countable |
 | apache_version | gauge | Apache version |
 | apache_virtual_hosts | gauge | Number of virtual hosts |
-
+| apache_total_kbytes | gauge | Apache data traffic in KB |
+| apache_server_uptime | gauge | Apache httpd server uptime |
+| apache_connection_kbytes | gauge | Kilobytes transferred of this connection |
+| apache_request_time | gauge | Milliseconds required to process most recent request |
+| apache_total_processes | gauge | Apache httpd process number |
