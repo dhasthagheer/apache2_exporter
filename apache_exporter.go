@@ -61,6 +61,7 @@ type Exporter struct {
 	requestTime           *prometheus.GaugeVec
 	connectionKBytes      *prometheus.GaugeVec
 	totalProcesses        prometheus.Gauge
+	totalWorkers          *prometheus.GaugeVec
 }
 
 // NewApache2Exporter returns an initialized Exporter.
@@ -218,6 +219,13 @@ func NewApache2Exporter(uri string) *Exporter {
 			Name:      "total_processes",
 			Help:      "Apache httpd process number, sum of busyworkers & idleworkers.",
 		}),
+		totalWorkers: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "total_workers",
+			Help:      "Apache worker number with busy or idle label.",
+		},
+			[]string{"worker"},
+		),
 	}
 }
 
@@ -251,6 +259,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.requestTime.Describe(ch)
 	e.connectionKBytes.Describe(ch)
 	e.totalProcesses.Describe(ch)
+	e.totalWorkers.Describe(ch)
 }
 
 func RemoveDuplicates(xs *[]string) {
@@ -573,6 +582,8 @@ func (e *Exporter) scrapeBasic(ch chan<- prometheus.Metric) error {
 	e.serverUptime.Set(float64(server_uptime))
 	e.busyWorkers.Set(float64(busy_workers))
 	e.totalProcesses.Set(float64(total_processes))
+	e.totalWorkers.WithLabelValues("busy").Set(float64(busy_workers))
+	e.totalWorkers.WithLabelValues("idle").Set(float64(idle_workers))
 
 	return nil
 }
@@ -622,6 +633,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.requestTime.Collect(ch)
 	e.connectionKBytes.Collect(ch)
 	e.totalProcesses.Collect(ch)
+	e.totalWorkers.Collect(ch)
 	return
 }
 
