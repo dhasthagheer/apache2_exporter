@@ -60,6 +60,7 @@ type Exporter struct {
 	busyWorkers           prometheus.Gauge
 	requestTime           *prometheus.GaugeVec
 	connectionKBytes      *prometheus.GaugeVec
+	totalProcesses        prometheus.Gauge
 }
 
 // NewApache2Exporter returns an initialized Exporter.
@@ -212,6 +213,11 @@ func NewApache2Exporter(uri string) *Exporter {
 		},
 			[]string{"srv", "client", "vhost", "request"},
 		),
+		totalProcesses: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "total_processes",
+			Help:      "Apache httpd process number, sum of busyworkers & idleworkers.",
+		}),
 	}
 }
 
@@ -244,6 +250,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.busyWorkers.Describe(ch)
 	e.requestTime.Describe(ch)
 	e.connectionKBytes.Describe(ch)
+	e.totalProcesses.Describe(ch)
 }
 
 func RemoveDuplicates(xs *[]string) {
@@ -521,7 +528,7 @@ func (e *Exporter) scrapeBasic(ch chan<- prometheus.Metric) error {
 		//BytesPerSec   string
 		//BytesPerReq   string
 		BusyWorkers string
-		//IdleWorkers   string
+		IdleWorkers string
 	)
 
 	for _, line := range lines {
@@ -551,17 +558,21 @@ func (e *Exporter) scrapeBasic(ch chan<- prometheus.Metric) error {
 		if strings.Contains(metric[0], "BusyWorkers") {
 			BusyWorkers = strings.TrimSpace(metric[1])
 		}
-		//if strings.Contains(metric[0], "IdleWorkers") {
-		//IdleWorkers = strings.TrimSpace(metric[1])
-		//}
+		if strings.Contains(metric[0], "IdleWorkers") {
+			IdleWorkers = strings.TrimSpace(metric[1])
+		}
 	}
 
 	total_kbytes, _ := strconv.ParseFloat(TotalKBytes, 64)
 	server_uptime, _ := strconv.ParseFloat(Uptime, 64)
 	busy_workers, _ := strconv.ParseFloat(BusyWorkers, 64)
+	idle_workers, _ := strconv.ParseFloat(IdleWorkers, 64)
+	total_processes := busy_workers + idle_workers
+
 	e.totalKBytes.Set(float64(total_kbytes))
 	e.serverUptime.Set(float64(server_uptime))
 	e.busyWorkers.Set(float64(busy_workers))
+	e.totalProcesses.Set(float64(total_processes))
 
 	return nil
 }
@@ -610,6 +621,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.busyWorkers.Collect(ch)
 	e.requestTime.Collect(ch)
 	e.connectionKBytes.Collect(ch)
+	e.totalProcesses.Collect(ch)
 	return
 }
 
