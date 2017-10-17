@@ -5,7 +5,7 @@
 This is a simple server that periodically scrapes apache stats and exports them via HTTP for Prometheus
 consumption.
 
-## Prework
+## Requirement
 
 - [Enable Apache server-status](https://unix.stackexchange.com/questions/153915/enable-server-status-on-my-web-server)
 
