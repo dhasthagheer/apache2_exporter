@@ -229,8 +229,8 @@ func NewApache2Exporter(uri string) *Exporter {
 	}
 }
 
-// Describe describes all the metrics ever exported by the apache2 exporter. It
-// implements prometheus.Collector.
+// Describe describes all the metrics ever exported by the
+// apache2 exporter. It implements prometheus.Collector.
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.version.Describe(ch)
 	e.totalRequests.Describe(ch)
