@@ -603,11 +603,14 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		e.scrapeFailures.Inc()
 		e.scrapeFailures.Collect(ch)
 	}
-	if err := e.scrapeScore(ch); err != nil {
-		log.Printf("Error scraping data via scoreboard: %s", err)
-		e.scrapeFailures.Inc()
-		e.scrapeFailures.Collect(ch)
-	}
+
+	// Close Scrape of Scroeboard
+	//if err := e.scrapeScore(ch); err != nil {
+	//log.Printf("Error scraping data via scoreboard: %s", err)
+	//e.scrapeFailures.Inc()
+	//e.scrapeFailures.Collect(ch)
+	//}
+
 	e.version.Collect(ch)
 	e.totalRequests.Collect(ch)
 	e.uptimeDays.Collect(ch)
@@ -630,8 +633,11 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.totalKBytes.Collect(ch)
 	e.serverUptime.Collect(ch)
 	e.busyWorkers.Collect(ch)
-	e.requestTime.Collect(ch)
-	e.connectionKBytes.Collect(ch)
+
+	// Close Scrape of Scroeboard
+	//e.requestTime.Collect(ch)
+	//e.connectionKBytes.Collect(ch)
+
 	e.totalProcesses.Collect(ch)
 	e.totalWorkers.Collect(ch)
 	return
