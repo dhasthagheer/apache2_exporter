@@ -132,7 +132,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	html, err := goquery.NewDocument(e.URI)
 	if err != nil {
-		log.Errorf("Scrape Apache Server Status Error: ", err)
+		return fmt.Errorf("Scrape Apache Server Status Error: %v", err)
 	}
 
 	var minVersion string
